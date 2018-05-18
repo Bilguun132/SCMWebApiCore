@@ -32,7 +32,7 @@ namespace SCMWebApiCore
             }));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            var connection = @"Server=ISE-CJFYTK2\SQLEXPRESS;initial catalog=SCM_GAME;persist security info=True;user id=sa;password=ISE_Admin@12345;MultipleActiveResultSets=True";
+            var connection = @"Server=172.19.76.55,1433\SQLEXPRESS;initial catalog=SCM_GAME;persist security info=True;user id=sa;password=ISE_Admin@12345;MultipleActiveResultSets=True";
             services.AddDbContext<SCM_GAMEContext>(options => options.UseSqlServer(connection));
             services.AddSignalR();
         }

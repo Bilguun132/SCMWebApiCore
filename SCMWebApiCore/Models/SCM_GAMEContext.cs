@@ -173,6 +173,10 @@ namespace SCMWebApiCore.Models
 
                 entity.Property(e => e.Period).HasColumnName("PERIOD");
 
+                entity.Property(e => e.OrderQty).HasColumnName("ORDER_QTY");
+
+                entity.Property(e => e.SentQty).HasColumnName("SENT_QTY");
+
                 entity.Property(e => e.TotalCost).HasColumnName("TOTAL_COST");
 
                 entity.HasOne(d => d.GameTeamPlayerRelationship)
