@@ -29,7 +29,7 @@ namespace SCMWebApiCore.Controllers
         public async Task<ActionResult> Get()
         {
             await _GAMEContext.Game.ToListAsync();
-            var JsonString = await _GAMEContext.Player.ToListAsync();
+            var JsonString = await _GAMEContext.Game.ToListAsync();
             return new JsonResult(JsonString);
         }
 
@@ -39,6 +39,22 @@ namespace SCMWebApiCore.Controllers
         {
             Game game = _GAMEContext.Game.Where(m => m.Id == id).FirstOrDefault();
             return new JsonResult(game);
+        }
+
+        [HttpGet]
+        [Route("GetPlayers/{id}")]
+        public async Task<ActionResult> GetPlayers(int id)
+        {
+            await _GAMEContext.PlayerRole.ToListAsync();
+            List<Player> players = new List<Player>();
+            List<GameTeamPlayerRelationship> gameTeamPlayerRelationships = await _GAMEContext.GameTeamPlayerRelationship.Where(m => m.GameId == id).ToListAsync();
+            foreach (GameTeamPlayerRelationship gameteamRs in gameTeamPlayerRelationships)
+            {
+                Player player = _GAMEContext.Player.Where(m => m.Id == gameteamRs.PlayerId).FirstOrDefault();
+                if (player == null) continue;
+                players.Add(player);
+            }
+            return new JsonResult(players);
         }
 
         // POST: api/Game

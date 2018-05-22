@@ -59,7 +59,7 @@ namespace SCMWebApiCore.Controllers
                         costs.Add(r.TotalCost);
                         inv.Add(r.Inventory);
                     }
-                    Results latestResult = results.Where(p=> p.Period == game.Period).FirstOrDefault();
+                    Results latestResult = results.Where(p=> p.Period == game.Period-1).FirstOrDefault();
                     if (latestResult != null)
                     {
                         Inventory = new
@@ -69,6 +69,20 @@ namespace SCMWebApiCore.Controllers
                             CurrentInventory = latestResult.Inventory,
                             latestResult.IncomingInventory,
                             latestResult.TotalCost,
+                            Costs = costs,
+                            Inventories = inv
+                        };
+                        await _GAMEContext.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        Inventory = new
+                        {
+                            PreviousOrder = 0,
+                            game.Period,
+                            CurrentInventory = player.Inventory.CurrentInventory,
+                            IncomingInventory = 0,
+                            TotalCost = 0,
                             Costs = costs,
                             Inventories = inv
                         };
@@ -134,7 +148,7 @@ namespace SCMWebApiCore.Controllers
 
                         InventoryInformation inventoryInformation = new InventoryInformation
                         {
-                            CurrentInventory = 10,
+                            CurrentInventory = 15,
                             Backlogs = 0,
                             IncomingInventory = 0,
                             TotalCost = 0,
@@ -183,12 +197,12 @@ namespace SCMWebApiCore.Controllers
                             Inventory = player.Inventory.CurrentInventory,
                             IncomingInventory = 0,
                             TotalCost = 0,
-                            Period = 1,
+                            Period = 0,
                             OrderQty = 0,
                             SentQty = 0
                         };
                         _GAMEContext.Results.Add(results);
-                        //  SendEmail(player);
+                        SendEmail(player);
                     }
                 }
                 await _GAMEContext.SaveChangesAsync();
@@ -208,7 +222,7 @@ namespace SCMWebApiCore.Controllers
                 var toAddress = new MailAddress(player.Email, player.FirstName);
                 const string fromPassword = "ISE_Admin@12345";
                 string subject = "Welcome to the SCM Game, " + player.FirstName;
-                string body = String.Format("Thank you for signing up to play the game. {0} Please use these credentials to login {1} Username: {2} Password: {3} Please access the game at http://172.16.124.17:3001", Environment.NewLine, Environment.NewLine, player.Username + Environment.NewLine, player.Password + Environment.NewLine);
+                string body = String.Format("Thank you for signing up to play the game. {0} Please use these credentials to login {1} Username: {2} Password: {3} Please access the game at http://172.19.76.55:5000", Environment.NewLine, Environment.NewLine, player.Username + Environment.NewLine, player.Password + Environment.NewLine);
 
                 var smtp = new SmtpClient
                 {
@@ -298,7 +312,7 @@ namespace SCMWebApiCore.Controllers
                 try
                 {
                     await _GAMEContext.SaveChangesAsync();
-                    await UpdateResults(gameTeamPlayerRelationship.TeamId, gameTeamPlayerRelationship.Game.Period + 1);
+                    await UpdateResults(gameTeamPlayerRelationship.TeamId, gameTeamPlayerRelationship.Game.Period);
                 }
                 catch (Exception ex)
                 {
@@ -329,6 +343,7 @@ namespace SCMWebApiCore.Controllers
                         var currentInventory = rs.Player.Inventory.CurrentInventory;
                         incomingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period).SingleOrDefault();
                         rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.SentQty : 0;
+                         rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
                         madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
                         rs.Player.Inventory.NewOrder = newOrder;
                         if (rs.Player.Inventory.CurrentInventory < 0)
@@ -349,7 +364,7 @@ namespace SCMWebApiCore.Controllers
                         rs.Player.Inventory.CurrentInventory -= newOrder;
                         break;
                     case (int)Role.Wholesaler:
-                        outgoingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period-1).SingleOrDefault();
+                        outgoingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period).SingleOrDefault();
                         newOrder = outgoingPlayerTransaction.OrderQty;
                         if (rs.Player.Inventory.CurrentInventory < 0)
                         {
@@ -371,10 +386,11 @@ namespace SCMWebApiCore.Controllers
                         incomingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period).SingleOrDefault();
                         madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
                         rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.SentQty : 0;
+                        rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
                         rs.Player.Inventory.NewOrder = newOrder;
                         break;
                     case (int)Role.Distributor:
-                        outgoingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period-1).SingleOrDefault();
+                        outgoingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period).SingleOrDefault();
                         newOrder = outgoingPlayerTransaction.OrderQty;
                         if (rs.Player.Inventory.CurrentInventory < 0)
                         {
@@ -396,11 +412,12 @@ namespace SCMWebApiCore.Controllers
                         incomingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period).SingleOrDefault();
                         madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
                         rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.SentQty : 0;
+                        rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
                         rs.Player.Inventory.NewOrder = newOrder;
                         break;
                     case (int)Role.Factory:
-                        outgoingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period-1).SingleOrDefault();
-                        var transaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == period - 1).SingleOrDefault();
+                        outgoingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period).SingleOrDefault();
+                        var transaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == period).SingleOrDefault();
                         newOrder = outgoingPlayerTransaction.OrderQty;
                         if (rs.Player.Inventory.CurrentInventory < 0)
                         {
@@ -423,6 +440,7 @@ namespace SCMWebApiCore.Controllers
                         incomingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period).SingleOrDefault();
                         madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
                         rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
+                        rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
                         rs.Player.Inventory.NewOrder = newOrder;
                         break;
                     default:
@@ -430,7 +448,7 @@ namespace SCMWebApiCore.Controllers
                 }
                 double cost = player.Inventory.CurrentInventory > 0 ? player.Inventory.CurrentInventory : Math.Abs(player.Inventory.CurrentInventory * 2);
                 player.Inventory.TotalCost += cost;
-                PlayerTransactions orderedTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == period-1).FirstOrDefault();
+                PlayerTransactions orderedTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == period).FirstOrDefault();
                 Results results = new Results
                 {
                     GameTeamPlayerRelationshipId = rs.Id,
