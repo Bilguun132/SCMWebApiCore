@@ -179,6 +179,8 @@ namespace SCMWebApiCore.Models
 
                 entity.Property(e => e.TotalCost).HasColumnName("TOTAL_COST");
 
+                entity.Property(e => e.TotalNeeded).HasColumnName("TOTAL_NEEDED");
+
                 entity.HasOne(d => d.GameTeamPlayerRelationship)
                     .WithMany(p => p.Results)
                     .HasForeignKey(d => d.GameTeamPlayerRelationshipId)

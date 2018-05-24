@@ -74,10 +74,20 @@ namespace SCMWebApiCore.Controllers
                 list.Add(new
                 {
                     player.PlayerRole.Role,
-                    Results = await dataProvider.GetPlayer(player.Id)
+                    Results = await dataProvider.GetDecisions(player.Id)
                 });
             }
             return new JsonResult(list);
+        }
+
+        [HttpGet]
+        [Route("GetTeams")]
+        public async Task<ActionResult> GetTeams()
+        {
+            await _GAMEContext.Team.ToListAsync();
+            var JsonString = await _GAMEContext.Team.ToListAsync();
+            return new JsonResult(JsonString);
+
         }
 
         // POST: api/Game

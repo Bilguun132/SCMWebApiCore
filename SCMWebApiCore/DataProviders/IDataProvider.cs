@@ -10,6 +10,8 @@ namespace SCMWebApiCore.DataProviders
     public interface IDataProvider
     {
         Task<Player> Join(string role, string connectionId);
-        Task<ActionResult> GetPlayer(int id);
+        Task<object> GetPlayer(int id);
+        void SendEmail(Player player);
+        Task<List<Results>> GetDecisions(int id);
     }
 }

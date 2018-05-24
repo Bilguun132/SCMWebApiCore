@@ -15,6 +15,7 @@ namespace SCMWebApiCore.Models
         public int? Period { get; set; }
         public int? OrderQty { get; set; }
         public int? SentQty { get; set; }
+        public int? TotalNeeded { get; set; }
 
         [JsonIgnore]
         public GameTeamPlayerRelationship GameTeamPlayerRelationship { get; set; }

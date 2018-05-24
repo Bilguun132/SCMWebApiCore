@@ -7,8 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using SCMWebApiCore.Models;
-using System.Net.Mail;
-using System.Net;
+
 using SCMWebApiCore.DataProviders;
 
 namespace SCMWebApiCore.Controllers
@@ -41,7 +40,7 @@ namespace SCMWebApiCore.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult> Get(int id)
         {
-            return await dataProvider.GetPlayer(id);
+            return new JsonResult(await dataProvider.GetPlayer(id));
         }
 
         [HttpPost]
@@ -74,11 +73,11 @@ namespace SCMWebApiCore.Controllers
                 };
                 _GAMEContext.Game.Add(game);
                 await _GAMEContext.SaveChangesAsync();
-                foreach (var group in GroupedPlayer)
+                foreach (List<PlayerClass> group in GroupedPlayer)
                 {
                     Team team = new Team
                     {
-                        Name = "New Team"
+                        Name = group.FirstOrDefault().Team.ToString()
                     };
                     _GAMEContext.Team.Add(team);
                     await _GAMEContext.SaveChangesAsync();
@@ -163,37 +162,7 @@ namespace SCMWebApiCore.Controllers
 
         public void SendEmail(Player player)
         {
-            try
-            {
-                var fromAddress = new MailAddress("isemlearning@gmail.com", "ISE Learning");
-                var toAddress = new MailAddress(player.Email, player.FirstName);
-                const string fromPassword = "ISE_Admin@12345";
-                string subject = "Welcome to the SCM Game, " + player.FirstName;
-                string body = String.Format("Thank you for signing up to play the game. {0} Please use these credentials to login {1} Username: {2} Password: {3} Please access the game at http://172.19.76.55:5000", Environment.NewLine, Environment.NewLine, player.Username + Environment.NewLine, player.Password + Environment.NewLine);
-
-                var smtp = new SmtpClient
-                {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
-                    EnableSsl = true,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    Credentials = new NetworkCredential(fromAddress.Address.Trim(), fromPassword.Trim()),
-                    Timeout = 20000
-                };
-                using (var message = new MailMessage(fromAddress, toAddress)
-                {
-                    Subject = subject,
-                    Body = body
-                })
-                {
-                    smtp.Send(message);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Write(ex);
-            }
-
+            dataProvider.SendEmail(player);
         }
 
         [HttpPost]
@@ -421,16 +390,10 @@ namespace SCMWebApiCore.Controllers
         [Route("GetDecisions/{id}")]
         public async Task<ActionResult> GetDecisions(int id)
         {
-            Player player = _GAMEContext.Player.Where(m => m.Id == id).FirstOrDefault();
-            if (player != null)
-            {
-                GameTeamPlayerRelationship gameTeamPlayerRelationship = _GAMEContext.GameTeamPlayerRelationship.Where(m => m.PlayerId == player.Id).FirstOrDefault();
-                if (gameTeamPlayerRelationship != null)
-                {
-                    List<Results> results = await _GAMEContext.Results.Where(m => m.GameTeamPlayerRelationshipId == gameTeamPlayerRelationship.Id).ToListAsync();
-                    return new JsonResult(results);
-                }
-            }
+            List<Results> results = await dataProvider.GetDecisions(id);
+
+            if (results != null) return new JsonResult(results);
+
             return this.NotFound("No player found");
         }
 
