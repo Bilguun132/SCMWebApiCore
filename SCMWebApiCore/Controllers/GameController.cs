@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using SCMWebApiCore.DataProviders;
 using SCMWebApiCore.Models;
 
 namespace SCMWebApiCore.Controllers
@@ -17,9 +18,11 @@ namespace SCMWebApiCore.Controllers
 
         private SCM_GAMEContext _GAMEContext;
         private readonly IHubContext<ChatHub> hubContext;
-        public GameController(SCM_GAMEContext _GAMEContext, IHubContext<ChatHub> hub)
+        private IDataProvider dataProvider;
+        public GameController(SCM_GAMEContext _GAMEContext, IHubContext<ChatHub> hub, IDataProvider dataProvider)
         {
             this._GAMEContext = _GAMEContext;
+            this.dataProvider = dataProvider;
             hubContext = hub;
         }
 
@@ -40,7 +43,7 @@ namespace SCMWebApiCore.Controllers
             Game game = _GAMEContext.Game.Where(m => m.Id == id).FirstOrDefault();
             return new JsonResult(game);
         }
-
+        //GET: api/Game/GetPlayers/1 gameId
         [HttpGet]
         [Route("GetPlayers/{id}")]
         public async Task<ActionResult> GetPlayers(int id)
@@ -55,6 +58,26 @@ namespace SCMWebApiCore.Controllers
                 players.Add(player);
             }
             return new JsonResult(players);
+        }
+
+        [HttpGet]
+        [Route("GetTeamInfo/{id}")]
+        public async Task<ActionResult> GetTeamInfo(int id)
+        {
+            await _GAMEContext.PlayerRole.ToListAsync();
+            List<GameTeamPlayerRelationship> gameTeamPlayerRelationships = await _GAMEContext.GameTeamPlayerRelationship.Where(m => m.TeamId == id).ToListAsync();
+            List<Object> list = new List<Object>();
+            foreach (GameTeamPlayerRelationship gameteamRs in gameTeamPlayerRelationships)
+            {
+                Player player = _GAMEContext.Player.Where(m => m.Id == gameteamRs.PlayerId).FirstOrDefault();
+                if (player == null) continue;
+                list.Add(new
+                {
+                    player.PlayerRole.Role,
+                    Results = await dataProvider.GetPlayer(player.Id)
+                });
+            }
+            return new JsonResult(list);
         }
 
         // POST: api/Game
