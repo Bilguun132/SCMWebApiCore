@@ -107,38 +107,54 @@ namespace SCMWebApiCore.DataProviders
             return player;
         }
 
-        public void SendEmail(Player player)
+        public async Task SendEmail(Player player)
         {
-            try
+            await Task.Run(() =>
             {
-                var fromAddress = new MailAddress("isemlearning@gmail.com", "ISE Learning");
-                var toAddress = new MailAddress(player.Email, player.FirstName);
-                const string fromPassword = "ISE_Admin@12345";
-                string subject = "Welcome to the SCM Game, " + player.FirstName;
-                string body = String.Format("Thank you for signing up to play the game. {0} Please use these credentials to login {1} Username: {2} Password: {3} Please access the game at http://172.19.76.55:5000", Environment.NewLine, Environment.NewLine, player.Username + Environment.NewLine, player.Password + Environment.NewLine);
+                try
+                {
+                    var fromAddress = new MailAddress("isemlearning@gmail.com", "ISE Learning");
+                    var toAddress = new MailAddress(player.Email, player.FirstName);
+                    const string fromPassword = "ISE_Admin@12345";
+                    string subject = "Welcome to the SCM Game, " + player.FirstName;
+                    string body = String.Format("Thank you for signing up to play the game. {0} Please use these credentials to login {1} Username: {2} Password: {3} Please access the game at http://172.19.76.55:5000", Environment.NewLine, Environment.NewLine, player.Username + Environment.NewLine, player.Password + Environment.NewLine);
 
-                var smtp = new SmtpClient
-                {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
-                    EnableSsl = true,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    Credentials = new NetworkCredential(fromAddress.Address.Trim(), fromPassword.Trim()),
-                    Timeout = 20000
-                };
-                using (var message = new MailMessage(fromAddress, toAddress)
-                {
-                    Subject = subject,
-                    Body = body
-                })
-                {
-                    smtp.Send(message);
+                    var smtp = new SmtpClient
+                    {
+                        Host = "smtp.gmail.com",
+                        Port = 587,
+                        EnableSsl = true,
+                        DeliveryMethod = SmtpDeliveryMethod.Network,
+                        Credentials = new NetworkCredential(fromAddress.Address.Trim(), fromPassword.Trim()),
+                        Timeout = 20000
+                    };
+                    using (var message = new MailMessage(fromAddress, toAddress)
+                    {
+                        Subject = subject,
+                        Body = body
+                    })
+                    {
+                        smtp.Send(message);
+                    }
                 }
-            }
-            catch (Exception ex)
+                catch (Exception ex)
+                {
+                    Console.Write(ex);
+                }
+            });
+        }
+
+        public async Task<double> GetWeeklyCost(int teamId, int period)
+        {
+            double cost = 0;
+            List<GameTeamPlayerRelationship> gameTeamPlayerRelationships = await _GAMEContext.GameTeamPlayerRelationship.Where(m => m.TeamId == teamId).ToListAsync();
+            foreach (GameTeamPlayerRelationship gameteamRs in gameTeamPlayerRelationships)
             {
-                Console.Write(ex);
+                Results results = await _GAMEContext.Results.Where(m => m.GameTeamPlayerRelationshipId == gameteamRs.Id && m.Period == period).FirstOrDefaultAsync();
+                if (results == null) continue;
+                cost += (double)results.TotalCost;
             }
+            return cost;
         }
     }
 }

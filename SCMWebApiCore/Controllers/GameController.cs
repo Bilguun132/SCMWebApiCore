@@ -77,6 +77,19 @@ namespace SCMWebApiCore.Controllers
                     Results = await dataProvider.GetDecisions(player.Id)
                 });
             }
+            List<Object> TeamCosts = new List<Object>();
+            await _GAMEContext.Game.ToListAsync();
+            for (int i = 0; i <gameTeamPlayerRelationships.FirstOrDefault().Game.Period; i++)
+            {
+                double cumulativeCost = await dataProvider.GetWeeklyCost(id, i);
+                TeamCosts.Add(new
+                {
+                    Period = i,
+                    WeeklyCost = i == 0 ? 0 : (cumulativeCost / i)
+                });
+            }
+            list.Add(TeamCosts);
+
             return new JsonResult(list);
         }
 

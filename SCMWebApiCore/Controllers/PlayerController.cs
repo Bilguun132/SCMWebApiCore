@@ -77,7 +77,7 @@ namespace SCMWebApiCore.Controllers
                 {
                     Team team = new Team
                     {
-                        Name = group.FirstOrDefault().Team.ToString()
+                        Name = group.FirstOrDefault().Team
                     };
                     _GAMEContext.Team.Add(team);
                     await _GAMEContext.SaveChangesAsync();
@@ -148,21 +148,26 @@ namespace SCMWebApiCore.Controllers
                             SentQty = 0
                         };
                         _GAMEContext.Results.Add(results);
-                        SendEmail(player);
+                       await dataProvider.SendEmail(player);
                     }
                 }
                 await _GAMEContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-
+                Console.Write(ex.ToString());
             }
 
         }
 
-        public void SendEmail(Player player)
+        [HttpGet]
+        [Route("SendEmail/{playerId}")]
+        public async Task<ActionResult> SendEmail(int playerId)
         {
-            dataProvider.SendEmail(player);
+            Player player = await _GAMEContext.Player.Where(m => m.Id == playerId).FirstOrDefaultAsync();
+            if (player == null) return this.NotFound("No such player exists");
+            await dataProvider.SendEmail(player);
+            return this.Ok("Sent Email");
         }
 
         [HttpPost]
@@ -232,7 +237,7 @@ namespace SCMWebApiCore.Controllers
                 }
                 catch (Exception ex)
                 {
-
+                    Console.WriteLine(ex.ToString());
                 }
 
                 //    await hubContext.Clients.All.SendAsync("ProgressGamePlay");
@@ -365,6 +370,10 @@ namespace SCMWebApiCore.Controllers
                 double cost = player.Inventory.CurrentInventory > 0 ? player.Inventory.CurrentInventory : Math.Abs(player.Inventory.CurrentInventory * 2);
                 player.Inventory.TotalCost += cost;
                 PlayerTransactions orderedTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == period).FirstOrDefault();
+                PlayerTransactions requestedTransactionToPlayer = playerTransactions.Where(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period).FirstOrDefault();
+                int totalNeeded = 0;
+                if (rs.Player.Inventory.CurrentInventory < 0) totalNeeded += Math.Abs(rs.Player.Inventory.CurrentInventory);
+                if (requestedTransactionToPlayer != null) totalNeeded += requestedTransactionToPlayer.OrderQty;
                 Results results = new Results
                 {
                     GameTeamPlayerRelationshipId = rs.Id,
@@ -374,8 +383,8 @@ namespace SCMWebApiCore.Controllers
                     Period = period,
                     PreviousOrder = player.Inventory.NewOrder,
                     OrderQty = orderedTransaction.OrderQty,
-                    SentQty = sentOrder
-
+                    SentQty = sentOrder,
+                    TotalNeeded = totalNeeded
                 };
                 _GAMEContext.Results.Add(results);
                 await _GAMEContext.SaveChangesAsync();

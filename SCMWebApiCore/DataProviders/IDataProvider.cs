@@ -11,7 +11,8 @@ namespace SCMWebApiCore.DataProviders
     {
         Task<Player> Join(string role, string connectionId);
         Task<object> GetPlayer(int id);
-        void SendEmail(Player player);
+        Task SendEmail(Player player);
         Task<List<Results>> GetDecisions(int id);
+        Task<double> GetWeeklyCost(int teamId, int period);
     }
 }

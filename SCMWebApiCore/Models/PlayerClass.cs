@@ -11,6 +11,6 @@ namespace SCMWebApiCore.Models
         public string LastName { get; set; }
         public string Email { get; set; }
         public string Role { get; set; }
-        public int Team { get; set; }
+        public string Team { get; set; }
     }
 }
