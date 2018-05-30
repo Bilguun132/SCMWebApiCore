@@ -49,13 +49,23 @@ namespace SCMWebApiCore.Controllers
         public async Task<ActionResult> GetPlayers(int id)
         {
             await _GAMEContext.PlayerRole.ToListAsync();
-            List<Player> players = new List<Player>();
+            await _GAMEContext.Team.ToListAsync();
+            List<PlayerClass> players = new List<PlayerClass>();
             List<GameTeamPlayerRelationship> gameTeamPlayerRelationships = await _GAMEContext.GameTeamPlayerRelationship.Where(m => m.GameId == id).ToListAsync();
             foreach (GameTeamPlayerRelationship gameteamRs in gameTeamPlayerRelationships)
             {
                 Player player = _GAMEContext.Player.Where(m => m.Id == gameteamRs.PlayerId).FirstOrDefault();
                 if (player == null) continue;
-                players.Add(player);
+                PlayerClass playerClass = new PlayerClass
+                {
+                    Id = player.Id,
+                    FirstName = player.FirstName,
+                    LastName = player.LastName,
+                    Email = player.Email,
+                    Role = player.PlayerRole.Role,
+                    Team = gameteamRs.Team.Name
+                };
+                players.Add(playerClass);
             }
             return new JsonResult(players);
         }
@@ -110,7 +120,14 @@ namespace SCMWebApiCore.Controllers
         {
             Game existingGame = await _GAMEContext.Game.Where(m => m.Id == game.Id).FirstOrDefaultAsync();
             if (existingGame == null) return;
-            existingGame.DemandInformation = game.DemandInformation;
+            List<string> demandData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(game.DemandInformation);
+            List<int> demandDataInt = new List<int>();
+            foreach (string demand in demandData)
+            {
+                demandDataInt.Add((int)Convert.ToDouble(demand));
+            }
+            existingGame.DemandInformation = Newtonsoft.Json.JsonConvert.SerializeObject(demandDataInt);
+            existingGame.MaxPeriod = demandDataInt.Count();
             await _GAMEContext.SaveChangesAsync();
         }
 
