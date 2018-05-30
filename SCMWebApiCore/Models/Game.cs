@@ -16,6 +16,7 @@ namespace SCMWebApiCore.Models
         public int MaxPeriod { get; set; }
         public int DeliveryDelay { get; set; }
         public int? CurrentOrder { get; set; }
+        public string DemandInformation { get; set; }
 
         public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
     }

@@ -103,6 +103,17 @@ namespace SCMWebApiCore.Controllers
 
         }
 
+
+        [HttpPost]
+        [Route("UpdateDemandData")]
+        public async Task UpdateDemandData([FromBody] Game game) 
+        {
+            Game existingGame = await _GAMEContext.Game.Where(m => m.Id == game.Id).FirstOrDefaultAsync();
+            if (existingGame == null) return;
+            existingGame.DemandInformation = game.DemandInformation;
+            await _GAMEContext.SaveChangesAsync();
+        }
+
         // POST: api/Game
         [HttpPost]
         [Route("Create")]

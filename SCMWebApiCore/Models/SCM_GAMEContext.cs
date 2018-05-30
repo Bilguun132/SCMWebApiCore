@@ -35,6 +35,8 @@ namespace SCMWebApiCore.Models
                 entity.Property(e => e.Period).HasColumnName("PERIOD");
 
                 entity.Property(e => e.CurrentOrder).HasColumnName("CURRENT_ORDER");
+
+                entity.Property(e => e.DemandInformation).HasColumnName("DEMAND_INFORMATION");
             });
 
             modelBuilder.Entity<GameTeamPlayerRelationship>(entity =>
