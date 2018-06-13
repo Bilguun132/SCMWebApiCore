@@ -18,6 +18,7 @@ namespace SCMWebApiCore.Models
         public int? CurrentOrder { get; set; }
         public string DemandInformation { get; set; }
         public int? FacilitatorId { get; set; }
+        public string GameUrl { get; set; }
 
         public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
     }

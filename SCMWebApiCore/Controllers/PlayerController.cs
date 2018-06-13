@@ -93,7 +93,8 @@ namespace SCMWebApiCore.Controllers
                         DeliveryDelay = 2,
                         CurrentOrder = 5,
                         FacilitatorId = addPlayerClass.FacilId,
-                        DemandInformation = Newtonsoft.Json.JsonConvert.SerializeObject(demandData)
+                        DemandInformation = Newtonsoft.Json.JsonConvert.SerializeObject(demandData),
+                        GameUrl = "https://scmgame.surge.sh/"
                     };
                     _GAMEContext.Game.Add(game);
                     await _GAMEContext.SaveChangesAsync();

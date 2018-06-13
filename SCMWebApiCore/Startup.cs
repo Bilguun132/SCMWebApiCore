@@ -11,7 +11,7 @@ namespace SCMWebApiCore
 {
     public class Startup
     {
-        readonly bool isDebug = true;
+        readonly bool isDebug = false;
 
         public Startup(IConfiguration configuration)
         {

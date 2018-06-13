@@ -114,16 +114,19 @@ namespace SCMWebApiCore.DataProviders
                 try
                 {
                     await _GAMEContext.PlayerRole.ToListAsync();
+                    await _GAMEContext.GameTeamPlayerRelationship.ToListAsync();
                     var fromAddress = new MailAddress("isemlearning@gmail.com", "ISE Learning");
                     var toAddress = new MailAddress(player.Email, player.FirstName);
+                    Game game = await _GAMEContext.Game.Where(m => m.Id == player.GameTeamPlayerRelationship.FirstOrDefault().GameId).FirstOrDefaultAsync();
+                    var gameUrl = (game != null && game.GameUrl != "" ? game.GameUrl : "http://172.19.76.55:5000");
                     const string fromPassword = "ISE_Admin@12345";
                     string subject = "Welcome to the SCM Game, " + player.FirstName;
                     string body = String.Format("Thank you for signing up to play the game. {0} Please use these credentials to login " +
                                                 "{1} Username: " +
                                                 "{2} Password: " +
                                                 "{3} You are playing as: " +
-                                                "{4} Please access the game at http://172.19.76.55:5000", Environment.NewLine, Environment.NewLine, 
-                                                player.Username + Environment.NewLine, player.Password + Environment.NewLine, player.PlayerRole.Role + Environment.NewLine);
+                                                "{4} Please access the game at {5}", Environment.NewLine, Environment.NewLine, 
+                                                player.Username + Environment.NewLine, player.Password + Environment.NewLine, player.PlayerRole.Role + Environment.NewLine, gameUrl);
 
                     var smtp = new SmtpClient
                     {
