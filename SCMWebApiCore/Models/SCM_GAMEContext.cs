@@ -37,6 +37,8 @@ namespace SCMWebApiCore.Models
                 entity.Property(e => e.CurrentOrder).HasColumnName("CURRENT_ORDER");
 
                 entity.Property(e => e.DemandInformation).HasColumnName("DEMAND_INFORMATION");
+
+                entity.Property(e => e.FacilitatorId).HasColumnName("FACILITATOR_ID");
             });
 
             modelBuilder.Entity<GameTeamPlayerRelationship>(entity =>

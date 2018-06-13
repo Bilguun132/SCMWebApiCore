@@ -43,6 +43,16 @@ namespace SCMWebApiCore.Controllers
             Game game = _GAMEContext.Game.Where(m => m.Id == id).FirstOrDefault();
             return new JsonResult(game);
         }
+
+        [HttpGet]
+        [Route("GetGamesByFacilitatorId/{facilitatorId}")]
+        public async Task<ActionResult> GetGamesByFacilitatorId(int facilitatorId)
+        {
+            List<Game> games = await _GAMEContext.Game.Where(m => m.FacilitatorId == facilitatorId).ToListAsync();
+            return new JsonResult(games);
+        }
+
+
         //GET: api/Game/GetPlayers/1 gameId
         [HttpGet]
         [Route("GetPlayers/{id}")]

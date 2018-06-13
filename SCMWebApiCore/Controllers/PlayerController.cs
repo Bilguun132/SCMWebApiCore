@@ -16,7 +16,7 @@ namespace SCMWebApiCore.Controllers
     [ApiController]
     public class PlayerController : ControllerBase
     {
-        public enum Role { Retailer = 1, Wholesaler, Distributor, Factory }
+        public enum Role { Retailer = 1, Wholesaler, Distributor, Factory, Facilitator }
         private SCM_GAMEContext _GAMEContext;
         private readonly IHubContext<ChatHub> hubContext;
         private IDataProvider dataProvider;
@@ -55,6 +55,19 @@ namespace SCMWebApiCore.Controllers
             return new JsonResult(player);
 
         }
+
+        [HttpPost]
+        [Route("AdminLogin")]
+        public async Task<ActionResult> AdminLogin([FromBody] LoginClass login)
+        {
+            await _GAMEContext.Player.ToListAsync();
+            await _GAMEContext.PlayerRole.ToListAsync();
+            Player player = _GAMEContext.Player.FirstOrDefault(m => m.Username == login.UserName.ToLower() && m.Password == login.Password && m.PlayerRoleId == (int)Role.Facilitator);
+            if (player == null) return NotFound(new JsonResult("Facilitator Not Found") { StatusCode = 404 });
+
+            return new JsonResult(player);
+        }
+
         // POST api/values
         [HttpPost]
         [Route("AddPlayers")]
@@ -65,38 +78,52 @@ namespace SCMWebApiCore.Controllers
                 List<PlayerClass> players = addPlayerClass.Players;
                 var GroupedPlayer = players.GroupBy(u => u.Team).Select(grp => grp.ToList()).ToList();
                 Game game;
-                if (addPlayerClass.GameId == 0)
+                if (addPlayerClass.GameId == null)
                 {
+                    List<int> demandData = new List<int>();
+                    for (int i=1; i<=40; i++)
+                    {
+                        demandData.Add(5);
+                    }
                     game = new Game
                     {
-                        Name = "New Game",
+                        Name = addPlayerClass.GameName,
                         Period = 1,
                         MaxPeriod = 40,
                         DeliveryDelay = 2,
-                        CurrentOrder = 5
+                        CurrentOrder = 5,
+                        FacilitatorId = addPlayerClass.FacilId,
+                        DemandInformation = Newtonsoft.Json.JsonConvert.SerializeObject(demandData)
                     };
                     _GAMEContext.Game.Add(game);
                     await _GAMEContext.SaveChangesAsync();
                 }
                 else
                 {
-                    game = await _GAMEContext.Game.Where(m => m.Id == addPlayerClass.GameId).FirstOrDefaultAsync();
+                    game = await _GAMEContext.Game.Where(m => m.Id == (int)addPlayerClass.GameId).FirstOrDefaultAsync();
                 }
 
                 foreach (List<PlayerClass> group in GroupedPlayer)
                 {
-
-                    Team team = await _GAMEContext.Team.Where(m => m.Name == group.FirstOrDefault().Team).FirstOrDefaultAsync();
-                    if (team == null)
+                    Player groupPlayer = await _GAMEContext.Player.Where(m => m.Id == group.FirstOrDefault().Id).FirstOrDefaultAsync();
+                    await _GAMEContext.GameTeamPlayerRelationship.ToListAsync();
+                    await _GAMEContext.Team.ToListAsync();
+                    Team team = new Team();
+                    if (groupPlayer != null)
+                    {
+                        team = groupPlayer.GameTeamPlayerRelationship.FirstOrDefault().Team;
+                        team.Name = group.FirstOrDefault().Team;
+                    }
+                    else
                     {
                         team = new Team
                         {
                             Name = group.FirstOrDefault().Team
                         };
                         _GAMEContext.Team.Add(team);
-                        await _GAMEContext.SaveChangesAsync();
-
                     }
+                
+                    await _GAMEContext.SaveChangesAsync();
 
                     foreach (PlayerClass newPlayer in group)
                     {
@@ -230,16 +257,24 @@ namespace SCMWebApiCore.Controllers
             }
 
             GameTeamPlayerRelationship gameTeamPlayerRelationship = await _GAMEContext.GameTeamPlayerRelationship.SingleOrDefaultAsync(m => m.PlayerId == player.Id);
-            PlayerTransactions playerTransactions = new PlayerTransactions
-            {
-                OrderMadeFrom = player.Id,
-                OrderMadeTo = OrderMadeTo,
-                OrderQty = orderClass.OrderQty,
-                GameId = gameTeamPlayerRelationship.GameId,
-                TeamId = gameTeamPlayerRelationship.TeamId,
-                OrderMadePeriod = gameTeamPlayerRelationship.Game.Period,
-                OrderReceivePeriod = gameTeamPlayerRelationship.Game.Period + 2,
-            };
+            PlayerTransactions playerTransactions = await _GAMEContext.PlayerTransactions.SingleOrDefaultAsync(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == gameTeamPlayerRelationship.Game.Period);
+            if (playerTransactions == null) playerTransactions = new PlayerTransactions();
+            playerTransactions.OrderMadeFrom = player.Id;
+            playerTransactions.OrderMadeTo = OrderMadeTo;
+            playerTransactions.OrderQty = orderClass.OrderQty;
+            playerTransactions.GameId = gameTeamPlayerRelationship.GameId;
+            playerTransactions.TeamId = gameTeamPlayerRelationship.TeamId;
+            playerTransactions.OrderMadePeriod = gameTeamPlayerRelationship.Game.Period;
+            playerTransactions.OrderReceivePeriod = gameTeamPlayerRelationship.Game.Period + 2;
+            //{
+            //    OrderMadeFrom = player.Id,
+            //    OrderMadeTo = OrderMadeTo,
+            //    OrderQty = orderClass.OrderQty,
+            //    GameId = gameTeamPlayerRelationship.GameId,
+            //    TeamId = gameTeamPlayerRelationship.TeamId,
+            //    OrderMadePeriod = gameTeamPlayerRelationship.Game.Period,
+            //    OrderReceivePeriod = gameTeamPlayerRelationship.Game.Period + 2,
+            //};
             player.HasMadeDecision = true;
             _GAMEContext.PlayerTransactions.Add(playerTransactions);
 

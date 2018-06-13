@@ -11,6 +11,7 @@ namespace SCMWebApiCore
 {
     public class Startup
     {
+        readonly bool isDebug = true;
 
         public Startup(IConfiguration configuration)
         {
@@ -31,8 +32,9 @@ namespace SCMWebApiCore
                        .AllowAnyHeader();
             }));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-
-            var connection = @"Server=172.19.76.55\SQLEXPRESS;initial catalog=SCM_GAME;persist security info=True;user id=sa;password=ISE_Admin@12345;MultipleActiveResultSets=True";
+            var connection = (isDebug ? @"Server=172.19.76.55\SQLEXPRESS;initial catalog=SCM_GAME;persist security info=True;user id=sa;password=ISE_Admin@12345;MultipleActiveResultSets=True" : @"Server=nusisemgameserver.database.windows.net,1433;initial catalog=SCM_GAME;persist security info=True;user id=isemadmin;password=ISE_Admin@12345;MultipleActiveResultSets=True");
+           // var connection = @"Server=nusisemgameserver.database.windows.net,1433;initial catalog=SCM_GAME;persist security info=True;user id=isemadmin;password=ISE_Admin@12345;MultipleActiveResultSets=True";
+        //   var connection = @"Server=172.19.76.55\SQLEXPRESS;initial catalog=SCM_GAME;persist security info=True;user id=sa;password=ISE_Admin@12345;MultipleActiveResultSets=True";
             services.AddDbContext<SCM_GAMEContext>(options => options.UseSqlServer(connection));
             services.AddSignalR();
         }
