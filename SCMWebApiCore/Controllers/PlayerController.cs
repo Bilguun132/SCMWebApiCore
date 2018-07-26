@@ -88,13 +88,11 @@ namespace SCMWebApiCore.Controllers
                     game = new Game
                     {
                         Name = addPlayerClass.GameName,
-                        Period = 1,
                         MaxPeriod = 40,
                         DeliveryDelay = 2,
-                        CurrentOrder = 5,
                         FacilitatorId = addPlayerClass.FacilId,
                         DemandInformation = Newtonsoft.Json.JsonConvert.SerializeObject(demandData),
-                        GameUrl = "https://scmgame.surge.sh/"
+                        GameUrl = "https://winegame.edventist.com/"
                     };
                     _GAMEContext.Game.Add(game);
                     await _GAMEContext.SaveChangesAsync();
@@ -119,7 +117,9 @@ namespace SCMWebApiCore.Controllers
                     {
                         team = new Team
                         {
-                            Name = group.FirstOrDefault().Team
+                            Name = group.FirstOrDefault().Team,
+                            CurrentOrder = 5,
+                            CurrentPeriod = 1
                         };
                         _GAMEContext.Team.Add(team);
                     }
@@ -233,6 +233,7 @@ namespace SCMWebApiCore.Controllers
             await _GAMEContext.InventoryInformation.ToListAsync();
             await _GAMEContext.Game.ToListAsync();
             await _GAMEContext.GameTeamPlayerRelationship.ToListAsync();
+            await _GAMEContext.Team.ToListAsync();
             if (player != null)
             {
                 InventoryInformation inventoryInformation = player.Inventory;
@@ -258,15 +259,15 @@ namespace SCMWebApiCore.Controllers
             }
 
             GameTeamPlayerRelationship gameTeamPlayerRelationship = await _GAMEContext.GameTeamPlayerRelationship.SingleOrDefaultAsync(m => m.PlayerId == player.Id);
-            PlayerTransactions playerTransactions = await _GAMEContext.PlayerTransactions.SingleOrDefaultAsync(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == gameTeamPlayerRelationship.Game.Period);
+            PlayerTransactions playerTransactions = await _GAMEContext.PlayerTransactions.SingleOrDefaultAsync(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == gameTeamPlayerRelationship.Team.CurrentPeriod);
             if (playerTransactions == null) playerTransactions = new PlayerTransactions();
             playerTransactions.OrderMadeFrom = player.Id;
             playerTransactions.OrderMadeTo = OrderMadeTo;
             playerTransactions.OrderQty = orderClass.OrderQty;
             playerTransactions.GameId = gameTeamPlayerRelationship.GameId;
             playerTransactions.TeamId = gameTeamPlayerRelationship.TeamId;
-            playerTransactions.OrderMadePeriod = gameTeamPlayerRelationship.Game.Period;
-            playerTransactions.OrderReceivePeriod = gameTeamPlayerRelationship.Game.Period + 2;
+            playerTransactions.OrderMadePeriod = gameTeamPlayerRelationship.Team.CurrentPeriod;
+            playerTransactions.OrderReceivePeriod = gameTeamPlayerRelationship.Team.CurrentPeriod + 2;
             //{
             //    OrderMadeFrom = player.Id,
             //    OrderMadeTo = OrderMadeTo,
@@ -295,7 +296,7 @@ namespace SCMWebApiCore.Controllers
                 try
                 {
                     await _GAMEContext.SaveChangesAsync();
-                    await UpdateResults(gameTeamPlayerRelationship.TeamId, gameTeamPlayerRelationship.Game.Period);
+                    await UpdateResults(gameTeamPlayerRelationship.TeamId, gameTeamPlayerRelationship.Team.CurrentPeriod);
                 }
                 catch (Exception ex)
                 {
@@ -322,7 +323,7 @@ namespace SCMWebApiCore.Controllers
                 switch (player.PlayerRoleId)
                 {
                     case (int)Role.Retailer:
-                        newOrder = (int)rs.Game.CurrentOrder;
+                        newOrder = (int)rs.Team.CurrentOrder;
                         var currentInventory = rs.Player.Inventory.CurrentInventory;
                         incomingPlayerTransaction = playerTransactions.Where(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period).SingleOrDefault();
                         rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.SentQty : 0;
@@ -451,10 +452,13 @@ namespace SCMWebApiCore.Controllers
                 _GAMEContext.Results.Add(results);
                 await _GAMEContext.SaveChangesAsync();
             }
+
             Game game = gameTeamPlayerRelationships.FirstOrDefault().Game;
+            Team team = gameTeamPlayerRelationships.FirstOrDefault().Team;
+
             List<int> demandData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<int>>(game.DemandInformation);
-            game.CurrentOrder = demandData[game.Period];
-            game.Period += 1;
+            team.CurrentOrder = demandData[team.CurrentPeriod];
+            team.CurrentPeriod += 1;
             await _GAMEContext.SaveChangesAsync();
         }
 

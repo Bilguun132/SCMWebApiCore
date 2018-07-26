@@ -32,10 +32,6 @@ namespace SCMWebApiCore.Models
 
                 entity.Property(e => e.Name).HasColumnName("NAME");
 
-                entity.Property(e => e.Period).HasColumnName("PERIOD");
-
-                entity.Property(e => e.CurrentOrder).HasColumnName("CURRENT_ORDER");
-
                 entity.Property(e => e.DemandInformation).HasColumnName("DEMAND_INFORMATION");
 
                 entity.Property(e => e.FacilitatorId).HasColumnName("FACILITATOR_ID");
@@ -200,6 +196,10 @@ namespace SCMWebApiCore.Models
                 entity.Property(e => e.Id).HasColumnName("ID");
 
                 entity.Property(e => e.Name).HasColumnName("NAME");
+
+                entity.Property(e => e.CurrentPeriod).HasColumnName("CURRENT_PERIOD");
+
+                entity.Property(e => e.CurrentOrder).HasColumnName("CURRENT_ORDER");
             });
         }
     }

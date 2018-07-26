@@ -12,6 +12,8 @@ namespace SCMWebApiCore.Models
 
         public int Id { get; set; }
         public string Name { get; set; }
+        public int CurrentPeriod { get; set; }
+        public int CurrentOrder { get; set; }
 
         public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
     }

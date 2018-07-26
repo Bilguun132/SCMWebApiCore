@@ -27,9 +27,9 @@ namespace SCMWebApiCore.DataProviders
                 await _GAMEContext.Game.ToListAsync();
                 await _GAMEContext.InventoryInformation.ToListAsync();
                 Player player = await _GAMEContext.Player.SingleOrDefaultAsync(m => m.Id == id);
-                Game game = player.GameTeamPlayerRelationship.FirstOrDefault().Game;
+                Team team = player.GameTeamPlayerRelationship.FirstOrDefault().Team;
                 var Inventory = new Object();
-                if (player != null && game != null)
+                if (player != null && team != null)
                 {
                     GameTeamPlayerRelationship gameTeamPlayerRelationship = _GAMEContext.GameTeamPlayerRelationship.Where(m => m.PlayerId == player.Id).SingleOrDefault();
                     List<Results> results = await _GAMEContext.Results.Where(m => m.GameTeamPlayerRelationshipId == gameTeamPlayerRelationship.Id).ToListAsync();
@@ -40,13 +40,13 @@ namespace SCMWebApiCore.DataProviders
                         costs.Add(r.TotalCost);
                         inv.Add(r.Inventory);
                     }
-                    Results latestResult = results.Where(p => p.Period == game.Period - 1).FirstOrDefault();
+                    Results latestResult = results.Where(p => p.Period == team.CurrentPeriod - 1).FirstOrDefault();
                     if (latestResult != null)
                     {
                         Inventory = new
                         {
                             latestResult.PreviousOrder,
-                            game.Period,
+                            team.CurrentPeriod,
                             CurrentInventory = latestResult.Inventory,
                             latestResult.IncomingInventory,
                             latestResult.TotalCost,
@@ -60,7 +60,7 @@ namespace SCMWebApiCore.DataProviders
                         Inventory = new
                         {
                             PreviousOrder = 0,
-                            game.Period,
+                            team.CurrentPeriod,
                             CurrentInventory = player.Inventory.CurrentInventory,
                             IncomingInventory = 0,
                             TotalCost = 0,

@@ -99,7 +99,7 @@ namespace SCMWebApiCore.Controllers
             }
             List<Object> TeamCosts = new List<Object>();
             await _GAMEContext.Game.ToListAsync();
-            for (int i = 0; i <gameTeamPlayerRelationships.FirstOrDefault().Game.Period; i++)
+            for (int i = 0; i <gameTeamPlayerRelationships.FirstOrDefault().Team.CurrentPeriod; i++)
             {
                 double cumulativeCost = await dataProvider.GetWeeklyCost(id, i);
                 TeamCosts.Add(new
