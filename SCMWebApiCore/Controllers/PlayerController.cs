@@ -260,7 +260,11 @@ namespace SCMWebApiCore.Controllers
 
             GameTeamPlayerRelationship gameTeamPlayerRelationship = await _GAMEContext.GameTeamPlayerRelationship.SingleOrDefaultAsync(m => m.PlayerId == player.Id);
             PlayerTransactions playerTransactions = await _GAMEContext.PlayerTransactions.SingleOrDefaultAsync(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == gameTeamPlayerRelationship.Team.CurrentPeriod);
-            if (playerTransactions == null) playerTransactions = new PlayerTransactions();
+            if (playerTransactions == null)
+            {
+                playerTransactions = new PlayerTransactions();
+                _GAMEContext.PlayerTransactions.Add(playerTransactions);
+            }
             playerTransactions.OrderMadeFrom = player.Id;
             playerTransactions.OrderMadeTo = OrderMadeTo;
             playerTransactions.OrderQty = orderClass.OrderQty;
@@ -278,7 +282,6 @@ namespace SCMWebApiCore.Controllers
             //    OrderReceivePeriod = gameTeamPlayerRelationship.Game.Period + 2,
             //};
             player.HasMadeDecision = true;
-            _GAMEContext.PlayerTransactions.Add(playerTransactions);
 
             bool success = true;
             List<GameTeamPlayerRelationship> gameTeamPlayerRelationships = _GAMEContext.GameTeamPlayerRelationship.Where(m => m.TeamId == gameTeamPlayerRelationship.TeamId).ToList();

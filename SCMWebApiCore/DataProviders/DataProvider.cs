@@ -26,6 +26,7 @@ namespace SCMWebApiCore.DataProviders
                 await _GAMEContext.PlayerRole.ToListAsync();
                 await _GAMEContext.Game.ToListAsync();
                 await _GAMEContext.InventoryInformation.ToListAsync();
+                await _GAMEContext.Team.ToListAsync();
                 Player player = await _GAMEContext.Player.SingleOrDefaultAsync(m => m.Id == id);
                 Team team = player.GameTeamPlayerRelationship.FirstOrDefault().Team;
                 var Inventory = new Object();
