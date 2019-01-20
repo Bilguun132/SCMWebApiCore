@@ -17,6 +17,6 @@ namespace SCMWebApiCore.Models
         public int? NewOrder { get; set; }
         public double? TotalCost { get; set; }
 
-        public ICollection<Player> Player { get; set; }
+        virtual public ICollection<Player> Player { get; set; }
     }
 }
