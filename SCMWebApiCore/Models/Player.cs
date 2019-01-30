@@ -6,7 +6,10 @@ namespace SCMWebApiCore.Models
 {
     public partial class Player
     {
-        public Player() => GameTeamPlayerRelationship = new HashSet<GameTeamPlayerRelationship>();
+        public Player()
+        {
+            GameTeamPlayerRelationship = new HashSet<GameTeamPlayerRelationship>();
+        }
 
         public int Id { get; set; }
         public string FirstName { get; set; }
@@ -19,10 +22,9 @@ namespace SCMWebApiCore.Models
         public string ConnectionId { get; set; }
         public int? InventoryId { get; set; }
         public bool? HasMadeDecision { get; set; }
-        [JsonIgnore]
-        virtual public InventoryInformation Inventory { get; set; }
-        virtual public PlayerRole PlayerRole { get; set; }
-        [JsonIgnore]
-        virtual public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
+
+        public InventoryInformation Inventory { get; set; }
+        public PlayerRole PlayerRole { get; set; }
+        public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
     }
 }

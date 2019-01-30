@@ -18,6 +18,6 @@ namespace SCMWebApiCore.Models
         public int? TotalNeeded { get; set; }
 
         [JsonIgnore]
-        virtual public GameTeamPlayerRelationship GameTeamPlayerRelationship { get; set; }
+        public GameTeamPlayerRelationship GameTeamPlayerRelationship { get; set; }
     }
 }

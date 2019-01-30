@@ -15,6 +15,6 @@ namespace SCMWebApiCore.Models
         public string Role { get; set; }
 
         [JsonIgnore]
-        virtual public ICollection<Player> Player { get; set; }
+        public ICollection<Player> Player { get; set; }
     }
 }

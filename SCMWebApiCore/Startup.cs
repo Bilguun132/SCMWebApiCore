@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using SCMWebApiCore.DataProviders;
 using SCMWebApiCore.Models;
 using System.Data.SqlClient;
-using Swashbuckle.AspNetCore.Swagger;
 
 namespace SCMWebApiCore
 {
@@ -35,26 +34,8 @@ namespace SCMWebApiCore
             }));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             _connection = Configuration.GetConnectionString("AzureConnectionString");
-            services.AddDbContext<SCM_GAMEContext>(options => 
-            options.UseLazyLoadingProxies()
-            .UseSqlServer(_connection));
+            services.AddDbContext<SCM_GAMEContext>(options => options.UseSqlServer(_connection));
             services.AddSignalR();
-            // Register the Swagger generator, defining 1 or more Swagger documents
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Info
-                {
-                    Version = "v1",
-                    Title = "Beer Web Game API",
-                    Description = "ASP.NET Core API used for React.JS web app",
-                    TermsOfService = "None",
-                    Contact = new Contact
-                    {
-                        Name = "Bilguun Batbold",
-                        Email = "isebb@nus.edu.sg"
-                    }
-                });
-            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,7 +47,7 @@ namespace SCMWebApiCore
             }
             else
             {
-               // app.UseHsts();
+                app.UseHsts();
             }
 
             app.UseCors("MyPolicy");
@@ -74,17 +55,6 @@ namespace SCMWebApiCore
             app.UseSignalR(routes =>
             {
                 routes.MapHub<ChatHub>("/chat");
-            });
-
-            // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger();
-
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
-            // specifying the Swagger JSON endpoint.
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                c.RoutePrefix = string.Empty;
             });
             app.UseMvc();
         }

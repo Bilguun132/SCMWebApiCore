@@ -5,7 +5,10 @@ namespace SCMWebApiCore.Models
 {
     public partial class Game
     {
-        public Game() => GameTeamPlayerRelationship = new HashSet<GameTeamPlayerRelationship>();
+        public Game()
+        {
+            GameTeamPlayerRelationship = new HashSet<GameTeamPlayerRelationship>();
+        }
 
         public int Id { get; set; }
         public string Name { get; set; }
@@ -15,6 +18,6 @@ namespace SCMWebApiCore.Models
         public int? FacilitatorId { get; set; }
         public string GameUrl { get; set; }
 
-        virtual public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
+        public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
     }
 }
