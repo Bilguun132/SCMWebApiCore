@@ -124,6 +124,34 @@ namespace SCMWebApiCore.Controllers
         }
 
 
+        [HttpGet]
+        [Route("{gameId}/getTeamInfo")]
+        public async Task<ActionResult> GetTeamInfoGameId(int gameId)
+        {
+
+            var teams = await _GAMEContext.GameTeamPlayerRelationship.Where(m => m.GameId == gameId).Select(c=>c.Team).Distinct().ToListAsync();
+            List<Object> list = new List<Object>();
+            foreach (Team team in teams)
+            {
+                List<Object> TeamCosts = new List<Object>();
+
+                for (int i = 0; i < team.CurrentPeriod; i++)
+                {
+                    double cumulativeCost = await dataProvider.GetWeeklyCost(team.Id, i);
+                    TeamCosts.Add(new
+                    {
+                        Period = i,
+                        WeeklyCost = i == 0 ? 0 : (cumulativeCost / i)
+                    });
+                }
+                list.Add(TeamCosts);
+            }
+
+            return new JsonResult(list);
+
+        }
+
+
         [HttpPost]
         [Route("UpdateDemandData")]
         public async Task UpdateDemandData([FromBody] Game game) 

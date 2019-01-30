@@ -19,9 +19,12 @@ namespace SCMWebApiCore
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
-                .UseStartup<Startup>();
+                .UseStartup<Startup>()
+               .ConfigureKestrel((context, options) =>
+               {
+                   // Set properties and call methods on options
+               });
     }
 }

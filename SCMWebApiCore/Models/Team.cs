@@ -15,6 +15,6 @@ namespace SCMWebApiCore.Models
         public int CurrentPeriod { get; set; }
         public int CurrentOrder { get; set; }
 
-        public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
+        virtual public ICollection<GameTeamPlayerRelationship> GameTeamPlayerRelationship { get; set; }
     }
 }
