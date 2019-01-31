@@ -99,13 +99,14 @@ namespace SCMWebApiCore.Controllers
             }
             List<Object> TeamCosts = new List<Object>();
             await _GAMEContext.Game.ToListAsync();
+            double cost = 0;
             for (int i = 0; i <gameTeamPlayerRelationships.FirstOrDefault().Team.CurrentPeriod; i++)
             {
-                double cumulativeCost = await dataProvider.GetWeeklyCost(id, i);
+                cost += await dataProvider.GetWeeklyCost(id, i);
                 TeamCosts.Add(new
                 {
                     Period = i,
-                    WeeklyCost = i == 0 ? 0 : (cumulativeCost / i)
+                    WeeklyCost = i == 0 ? 0 : cost
                 });
             }
             list.Add(TeamCosts);
@@ -134,14 +135,14 @@ namespace SCMWebApiCore.Controllers
             foreach (Team team in teams)
             {
                 List<Object> TeamCosts = new List<Object>();
-
+                double cost = 0;
                 for (int i = 0; i < team.CurrentPeriod; i++)
                 {
-                    double cumulativeCost = await dataProvider.GetWeeklyCost(team.Id, i);
+                    cost += await dataProvider.GetWeeklyCost(team.Id, i); 
                     TeamCosts.Add(new
                     {
                         Period = i,
-                        WeeklyCost = i == 0 ? 0 : (cumulativeCost / i)
+                        WeeklyCost = i == 0 ? 0 : cost
                     });
                 }
                 list.Add(TeamCosts);

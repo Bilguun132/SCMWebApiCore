@@ -14,5 +14,8 @@ namespace SCMWebApiCore.DataProviders
         Task SendEmail(Player player);
         Task<List<Results>> GetDecisions(int id);
         Task<double> GetWeeklyCost(int teamId, int period);
+
+        Task<Boolean> ShouldUpdateResults(int? teamId);
+        Task UpdateResults(int? teamId, int? period);
     }
 }

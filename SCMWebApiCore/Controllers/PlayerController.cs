@@ -85,7 +85,8 @@ namespace SCMWebApiCore.Controllers
                     List<int> demandData = new List<int>();
                     for (int i=1; i<=40; i++)
                     {
-                        demandData.Add(5);
+                        int demand = (i <= 6) ? 4 : 8;
+                        demandData.Add(demand);
                     }
                     game = new Game
                     {
@@ -94,7 +95,7 @@ namespace SCMWebApiCore.Controllers
                         DeliveryDelay = 2,
                         FacilitatorId = addPlayerClass.FacilId,
                         DemandInformation = Newtonsoft.Json.JsonConvert.SerializeObject(demandData),
-                        GameUrl = "https://winegame.edventist.com/"
+                        GameUrl = "http://winegame.edventist.com/"
                     };
                     _GAMEContext.Game.Add(game);
                     await _GAMEContext.SaveChangesAsync();
@@ -120,8 +121,8 @@ namespace SCMWebApiCore.Controllers
                         team = new Team
                         {
                             Name = group.FirstOrDefault().Team,
-                            CurrentOrder = 5,
-                            CurrentPeriod = 1
+                            CurrentOrder = 4,
+                            CurrentPeriod = 2
                         };
                         _GAMEContext.Team.Add(team);
                     }
@@ -143,11 +144,11 @@ namespace SCMWebApiCore.Controllers
 
                             InventoryInformation inventoryInformation = new InventoryInformation
                             {
-                                CurrentInventory = 15,
+                                CurrentInventory = 50,
                                 Backlogs = 0,
-                                IncomingInventory = 0,
+                                IncomingInventory = 4,
                                 TotalCost = 0,
-                                NewOrder = 0
+                                NewOrder = 4
                             };
 
                             switch (newPlayer.Role)
@@ -188,14 +189,15 @@ namespace SCMWebApiCore.Controllers
                             Results results = new Results
                             {
                                 GameTeamPlayerRelationshipId = gameTeamPlayerRelationship.Id,
-                                PreviousOrder = 0,
+                                PreviousOrder = 4,
                                 Inventory = player.Inventory.CurrentInventory,
-                                IncomingInventory = 0,
+                                IncomingInventory = 4,
                                 TotalCost = 0,
-                                Period = 0,
-                                OrderQty = 0,
-                                SentQty = 0
+                                Period = 2,
+                                OrderQty = 4,
+                                SentQty = 4
                             };
+
                             _GAMEContext.Results.Add(results);
                             await dataProvider.SendEmail(player);
                         }
@@ -274,197 +276,10 @@ namespace SCMWebApiCore.Controllers
 
             player.HasMadeDecision = true;
             await _GAMEContext.SaveChangesAsync();
-            bool success = true;
-            List<GameTeamPlayerRelationship> gameTeamPlayerRelationships = _GAMEContext.GameTeamPlayerRelationship.Where(m => m.TeamId == gameTeamPlayerRelationship.TeamId).ToList();
-            foreach (GameTeamPlayerRelationship p in gameTeamPlayerRelationships)
-            {
-                if (p.Player.HasMadeDecision == false)
-                {
-                    success = false;
-                    break;
-                }
-            }
 
-            if (success)
-            {
-                Parallel.ForEach(gameTeamPlayerRelationships, p =>
-                {
-                    p.Player.HasMadeDecision = false;
-                });
+            if (await dataProvider.ShouldUpdateResults(gameTeamPlayerRelationship.TeamId)) await dataProvider.UpdateResults(gameTeamPlayerRelationship.TeamId, gameTeamPlayerRelationship.Team.CurrentPeriod); 
 
-                try
-                {
-                    await _GAMEContext.SaveChangesAsync();
-                    await UpdateResults(gameTeamPlayerRelationship.TeamId, gameTeamPlayerRelationship.Team.CurrentPeriod);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.ToString());
-                }
-
-            }
-            else
-            {
-                await _GAMEContext.SaveChangesAsync();
-            }
         }
-
-        [NonAction]
-        private async Task UpdateResults(int? teamId, int? period)
-        {
-            List<GameTeamPlayerRelationship> gameTeamPlayerRelationships = _GAMEContext.GameTeamPlayerRelationship.Where(m => m.TeamId == teamId).ToList();
-            List<PlayerTransactions> playerTransactions = _GAMEContext.PlayerTransactions.Where(m => m.TeamId == teamId).ToList();
-            foreach (GameTeamPlayerRelationship rs in gameTeamPlayerRelationships)
-            {
-                Player player = rs.Player;
-                int newOrder;
-                int sentOrder = 0;
-                int madeOrder = 0;
-                PlayerTransactions outgoingPlayerTransaction = null;
-                PlayerTransactions incomingPlayerTransaction = null;
-                switch (player.PlayerRoleId)
-                {
-                    case (int)Role.Retailer:
-                        newOrder = (int)rs.Team.CurrentOrder;
-                        var currentInventory = rs.Player.Inventory.CurrentInventory;
-                        incomingPlayerTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period);
-                        rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.SentQty : 0;
-                        rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
-                        madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
-                        rs.Player.Inventory.NewOrder = newOrder;
-                        if (rs.Player.Inventory.CurrentInventory < 0)
-                        {
-                            sentOrder = 0;
-                        }
-                        else
-                        {
-                            if (rs.Player.Inventory.CurrentInventory > newOrder)
-                            {
-                                sentOrder = newOrder;
-                            }
-                            else
-                            {
-                                sentOrder = rs.Player.Inventory.CurrentInventory;
-                            }
-                        }
-                        rs.Player.Inventory.CurrentInventory -= newOrder;
-                        rs.Player.Inventory.NewOrder = newOrder;
-                        break;
-                    case (int)Role.Wholesaler:
-                        outgoingPlayerTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period);
-                        newOrder = outgoingPlayerTransaction.OrderQty;
-                        if (rs.Player.Inventory.CurrentInventory < 0)
-                        {
-                            sentOrder = 0;
-                        }
-                        else
-                        {
-                            if (rs.Player.Inventory.CurrentInventory > newOrder)
-                            {
-                                sentOrder = newOrder;
-                            }
-                            else
-                            {
-                                sentOrder = rs.Player.Inventory.CurrentInventory;
-                            }
-                        }
-                        rs.Player.Inventory.CurrentInventory -= newOrder;
-                        outgoingPlayerTransaction.SentQty = sentOrder;
-                        incomingPlayerTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period);
-                        madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
-                        rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.SentQty : 0;
-                        rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
-                        rs.Player.Inventory.NewOrder = newOrder;
-                        break;
-                    case (int)Role.Distributor:
-                        outgoingPlayerTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period);
-                        newOrder = outgoingPlayerTransaction.OrderQty;
-                        if (rs.Player.Inventory.CurrentInventory < 0)
-                        {
-                            sentOrder = 0;
-                        }
-                        else
-                        {
-                            if (rs.Player.Inventory.CurrentInventory > newOrder)
-                            {
-                                sentOrder = newOrder;
-                            }
-                            else
-                            {
-                                sentOrder = rs.Player.Inventory.CurrentInventory;
-                            }
-                        }
-                        rs.Player.Inventory.CurrentInventory -= newOrder;
-                        outgoingPlayerTransaction.SentQty = sentOrder;
-                        incomingPlayerTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period);
-                        madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
-                        rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.SentQty : 0;
-                        rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
-                        rs.Player.Inventory.NewOrder = newOrder;
-                        break;
-                    case (int)Role.Factory:
-                        outgoingPlayerTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period);
-                        var transaction = playerTransactions.FirstOrDefault(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == period);
-                        newOrder = outgoingPlayerTransaction.OrderQty;
-                        if (rs.Player.Inventory.CurrentInventory < 0)
-                        {
-                            sentOrder = 0;
-                        }
-                        else
-                        {
-                            if (rs.Player.Inventory.CurrentInventory > newOrder)
-                            {
-                                sentOrder = newOrder;
-                            }
-                            else
-                            {
-                                sentOrder = rs.Player.Inventory.CurrentInventory;
-                            }
-                        }
-                        rs.Player.Inventory.CurrentInventory -= newOrder;
-                        outgoingPlayerTransaction.SentQty = sentOrder;
-                        transaction.SentQty = newOrder;
-                        incomingPlayerTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeFrom == player.Id && m.OrderReceivePeriod == period);
-                        madeOrder = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
-                        rs.Player.Inventory.IncomingInventory = incomingPlayerTransaction != null ? incomingPlayerTransaction.OrderQty : 0;
-                        rs.Player.Inventory.CurrentInventory += (int)rs.Player.Inventory.IncomingInventory;
-                        rs.Player.Inventory.NewOrder = newOrder;
-                        break;
-                    default:
-                        break;
-                }
-                double cost = player.Inventory.CurrentInventory > 0 ? player.Inventory.CurrentInventory : Math.Abs(player.Inventory.CurrentInventory * 2);
-                player.Inventory.TotalCost += cost;
-                PlayerTransactions orderedTransaction = playerTransactions.FirstOrDefault(m => m.OrderMadeFrom == player.Id && m.OrderMadePeriod == period);
-                PlayerTransactions requestedTransactionToPlayer = playerTransactions.FirstOrDefault(m => m.OrderMadeTo == player.Id && m.OrderMadePeriod == period);
-                int totalNeeded = 0;
-                if (rs.Player.Inventory.CurrentInventory < 0) totalNeeded += Math.Abs(rs.Player.Inventory.CurrentInventory);
-                if (requestedTransactionToPlayer != null) totalNeeded += requestedTransactionToPlayer.OrderQty;
-                Results results = new Results
-                {
-                    GameTeamPlayerRelationshipId = rs.Id,
-                    Inventory = rs.Player.Inventory.CurrentInventory,
-                    IncomingInventory = rs.Player.Inventory.IncomingInventory,
-                    TotalCost = player.Inventory.TotalCost,
-                    Period = period,
-                    PreviousOrder = player.Inventory.NewOrder,
-                    OrderQty = orderedTransaction.OrderQty,
-                    SentQty = sentOrder,
-                    TotalNeeded = totalNeeded
-                };
-                _GAMEContext.Results.Add(results);
-                await _GAMEContext.SaveChangesAsync();
-            }
-
-            Game game = gameTeamPlayerRelationships.FirstOrDefault().Game;
-            Team team = gameTeamPlayerRelationships.FirstOrDefault().Team;
-
-            List<int> demandData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<int>>(game.DemandInformation);
-            team.CurrentOrder = demandData[team.CurrentPeriod];
-            team.CurrentPeriod += 1;
-            await _GAMEContext.SaveChangesAsync();
-        }
-
 
         [HttpGet]
         [Route("GetDecisions/{id}")]

@@ -34,7 +34,7 @@ namespace SCMWebApiCore
                        .AllowAnyHeader();
             }));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            _connection = Configuration.GetConnectionString("AzureConnectionString");
+            _connection = Configuration.GetConnectionString("53ConnectionString");
             services.AddDbContext<SCM_GAMEContext>(options => 
             options.UseLazyLoadingProxies()
             .UseSqlServer(_connection));
@@ -83,8 +83,7 @@ namespace SCMWebApiCore
             // specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                c.RoutePrefix = string.Empty;
+                c.SwaggerEndpoint("swagger/v1/swagger.json", "My API V1");
             });
             app.UseMvc();
         }
